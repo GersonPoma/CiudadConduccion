@@ -1,0 +1,25 @@
+# Compilados de Maven
+target/
+
+# Sistema operativo
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# IDEs
+.idea/
+*.iml
+.vscode/
+.classpath
+.project
+.settings/
+
+# Carpeta creada por error (nvm de Node)
+/~/
+
+# Herramienta de migración de Java (archivos locales)
+.github/modernize/
+
+# Logs y temporales
+*.log
+hs_err_pid*
