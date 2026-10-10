@@ -12,16 +12,17 @@ public class clase3 extends clase2 {
     // ==================== 1. ESTADO Y POSICIONES DE LAS LUCES ====================
     protected boolean noche = true; // Inicia la escena con iluminación nocturna.
     protected boolean faros = true; // Inicia los focos del auto encendidos.
+    // Puse una farola por manzana. Con el mapa nuevo son 25 manzanas, así que quedan 25 farolas
+    // y también hay luz en las zonas que agregué (con las 9 de antes solo se veía el centro).
+    // Cada una va en la esquina de la acera, 4 unidades antes del centro de la manzana, pegada a la calle.
+    // Los centros son -40, -20, 0, 20 y 40, por eso las coordenadas quedan en -44, -24, -4, 16 y 36.
+    // OJO: si cambio cuántas son, hay que cambiar también uLuces[25] y el "indice < 25" del shader.
     protected static final float[][] LUCES = { // Cada fila contiene la posición X, Y, Z de una bombilla.
-        {-24, 4.5f, -24}, // Farola de la manzana noroeste.
-        {-4, 4.5f, -24}, // Farola de la manzana norte central.
-        {16, 4.5f, -24}, // Farola de la manzana noreste.
-        {-24, 4.5f, -4}, // Farola de la manzana oeste central.
-        {-4, 4.5f, -4}, // Farola de la manzana central.
-        {16, 4.5f, -4}, // Farola de la manzana este central.
-        {-24, 4.5f, 16}, // Farola de la manzana suroeste.
-        {-4, 4.5f, 16}, // Farola de la manzana sur central.
-        {16, 4.5f, 16} // Farola de la manzana sureste.
+        {-44, 4.5f, -44}, {-24, 4.5f, -44}, {-4, 4.5f, -44}, {16, 4.5f, -44}, {36, 4.5f, -44}, // manzanas de arriba (norte)
+        {-44, 4.5f, -24}, {-24, 4.5f, -24}, {-4, 4.5f, -24}, {16, 4.5f, -24}, {36, 4.5f, -24}, // segunda fila
+        {-44, 4.5f, -4}, {-24, 4.5f, -4}, {-4, 4.5f, -4}, {16, 4.5f, -4}, {36, 4.5f, -4}, // fila del medio
+        {-44, 4.5f, 16}, {-24, 4.5f, 16}, {-4, 4.5f, 16}, {16, 4.5f, 16}, {36, 4.5f, 16}, // cuarta fila
+        {-44, 4.5f, 36}, {-24, 4.5f, 36}, {-4, 4.5f, 36}, {16, 4.5f, 36}, {36, 4.5f, 36} // manzanas de abajo (sur)
     };
 
     // ==================== 2. CONTROLES E INDICADORES ====================
@@ -67,7 +68,7 @@ public class clase3 extends clase2 {
         }
         entero("uEmision", 0); // Hace que los objetos normales reciban iluminación.
 
-        for (int indice = 0; indice < LUCES.length; indice++) { // Recorre las nueve bombillas.
+        for (int indice = 0; indice < LUCES.length; indice++) { // Recorre todas las bombillas (con LUCES.length no tengo que poner el 25 a mano).
             float x = LUCES[indice][0]; // Lee la coordenada horizontal de la bombilla.
             float y = LUCES[indice][1]; // Lee su altura sobre el suelo.
             float z = LUCES[indice][2]; // Lee su coordenada en profundidad.
@@ -99,6 +100,27 @@ public class clase3 extends clase2 {
         }
     }
 
+    /**
+     * Igual que con las farolas: una cosa es que el faro se vea prendido (emisión)
+     * y otra la luz que tira hacia la calle, que se calcula en el shader.
+     * Acá solo hago que las cajitas de los faros brillen cuando están encendidos.
+     */
+    @Override // Amplía el auto que se dibuja en clase2.
+    protected void dibujarAuto() {
+        super.dibujarAuto(); // Primero el auto normal, con los faros apagados.
+        if (!faros) { // Si están apagados no hay nada más que hacer.
+            return;
+        }
+        entero("uEmision", 1); // El faro no se oscurece, se ve con su color tal cual.
+        float[] ladosFaros = {-0.55f, 0.55f}; // Mismas posiciones que los faros de clase2.
+        for (float x : ladosFaros) {
+            // La hago apenas más grande y un poquito más adelante que la original,
+            // porque si dibujo exactamente la misma caja encima no se ve (queda tapada por la profundidad).
+            pieza(x, 0.68f, -1.34f, 0.40f, 0.22f, 0.06f, 1, 1, 0.85f);
+        }
+        entero("uEmision", 0); // Lo dejo como estaba para que lo siguiente sí reciba luz.
+    }
+
     // ==================== 5. CÁLCULO DE LUZ EN LA GPU ====================
 
     /** Devuelve el programa GLSL que calcula el color iluminado de cada fragmento. */
@@ -109,7 +131,7 @@ public class clase3 extends clase2 {
             in vec3 vMundo; // Recibe la posición del fragmento en la ciudad.
             in vec3 vNormal; // Recibe la dirección perpendicular a la superficie.
             uniform vec3 uColor; // Recibe el color base de la caja.
-            uniform vec3 uLuces[9]; // Recibe las posiciones de las nueve farolas.
+            uniform vec3 uLuces[25]; // Posiciones de las 25 farolas. En GLSL el tamaño tiene que ser fijo, por eso va el número.
             uniform vec3 uAuto; // Recibe la posición del auto a la altura de los faros.
             uniform vec3 uFrente; // Recibe la dirección hacia la que apunta el vehículo.
             uniform int uNoche; // Vale 1 de noche y 0 de día.
@@ -136,7 +158,7 @@ public class clase3 extends clase2 {
                 luz += vec3(intensidadSol) * incidenciaSol; // Suma la contribución direccional al ambiente.
 
                 if (uNoche == 1) { // Calcula la iluminación de las farolas solo de noche.
-                    for (int indice = 0; indice < 9; indice++) { // Acumula el aporte de cada bombilla.
+                    for (int indice = 0; indice < 25; indice++) { // Suma la luz de cada farola (tiene que ser el mismo 25 de uLuces).
                         vec3 haciaLuz = uLuces[indice] - vMundo; // Forma el vector desde la superficie hacia la farola.
                         float distancia = length(haciaLuz); // Mide cuántas unidades separan superficie y bombilla.
                         float difusa = max(dot(normal, normalize(haciaLuz)), 0.0); // Calcula la incidencia de la luz sobre la cara.
@@ -161,8 +183,11 @@ public class clase3 extends clase2 {
                         float cono = smoothstep(0.85, 0.97, alineacion); // Suaviza el borde entre el exterior y el interior del foco.
                         float difusa = max(dot(normal, -normalize(haciaSuperficie)), 0.0); // Mide cuánto mira la cara hacia el faro.
                         float atenuacion = 1.0 + 0.04 * distancia * distancia; // Disminuye la intensidad al alejarse.
+                        // Con la atenuación sola la luz nunca llega a cero, siempre queda un poquito.
+                        // Así que le pongo un corte: hasta 18 unidades alumbra normal, de ahí se va apagando y a las 28 ya no llega.
+                        float alcance = 1.0 - smoothstep(18.0, 28.0, distancia);
                         vec3 colorFaro = vec3(1.0, 0.94, 0.72); // Define una luz frontal blanca y cálida.
-                        luz += colorFaro * cono * difusa * 8.0 / atenuacion; // Añade el aporte del foco a la iluminación total.
+                        luz += colorFaro * cono * difusa * alcance * 8.0 / atenuacion; // Añade el aporte del foco a la iluminación total.
                     }
                 }
 
