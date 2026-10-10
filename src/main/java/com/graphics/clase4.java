@@ -15,6 +15,9 @@ public class clase4 extends clase3 {
     private boolean mostrarMapa = true; // Muestra el minimapa desde el inicio.
     private int entregas = 0; // Cuenta las entregas completadas; también identifica el siguiente destino.
     private float tiempo = 0; // Acumula los segundos de la partida hasta completar el recorrido.
+    // Antes los semáforos usaban "tiempo", pero ese se detiene al ganar y se quedaban congelados.
+    // Este reloj sigue corriendo siempre y lo uso solo para las animaciones.
+    private float reloj = 0;
     // Moví las entregas a las esquinas del mapa nuevo para que el recorrido pase por la parte agregada.
     // Tienen que estar en calle: X y Z con -50, -30, -10, 10, 30 o 50 (los otros valores caen en manzanas).
     private static final float[][] DESTINOS = { // Cada fila contiene X y Z de una parada sobre la calle.
@@ -48,6 +51,7 @@ public class clase4 extends clase3 {
     @Override // Añade el objetivo del juego al movimiento heredado.
     protected void actualizar(float deltaTime) {
         super.actualizar(deltaTime); // Procesa aceleración, giro, colisiones y título de la ventana.
+        reloj += deltaTime; // Va antes del return para que avance aunque ya se haya ganado.
         if (entregas >= DESTINOS.length) { // Comprueba si ya se completaron todas las paradas.
             return; // Conserva el tiempo final y evita leer fuera del arreglo.
         }
@@ -97,8 +101,8 @@ public class clase4 extends clase3 {
         entero("uEmision", 1); // Hace que el objetivo sea visible incluso de noche.
         caja(x, 0.06f, z, 5, 0.08f, 5, 1, 0.72f, 0.12f); // Dibuja una marca dorada sobre el asfalto.
         if (!vistaMapa) { // Evita añadir una baliza tridimensional al mapa pequeño.
-            float alturaBaliza = 3.5f + (float) Math.sin(tiempo * 2) * 0.3f; // Hace oscilar la baliza suavemente.
-            cajaGirada(x, alturaBaliza, z, 0.8f, 0.8f, 0.8f, 1, 0.8f, 0.15f, tiempo); // Dibuja el cubo giratorio del objetivo.
+            float alturaBaliza = 3.5f + (float) Math.sin(reloj * 2) * 0.3f; // Hace oscilar la baliza suavemente.
+            cajaGirada(x, alturaBaliza, z, 0.8f, 0.8f, 0.8f, 1, 0.8f, 0.15f, reloj); // Dibuja el cubo giratorio del objetivo.
         }
         entero("uEmision", 0); // Devuelve a los siguientes objetos su iluminación normal.
     }
@@ -159,10 +163,17 @@ public class clase4 extends clase3 {
         entero("uEmision", 0); // Restablece la iluminación normal de los demás elementos.
     }
 
-    /** Dibuja las franjas blancas sobre la calle contigua al norte de la manzana. */
+    /**
+     * Dibuja un paso de cebra que cruza la calle que está al norte de la manzana.
+     * Antes eran franjas cortas pegadas a la acera y no parecía un cruce de verdad.
+     * La calle va de z - 15 a z - 5 (la acera de cada manzana llega hasta 5 del centro),
+     * así que pongo 9 franjas de z - 14 a z - 6 y queda cruzando de vereda a vereda.
+     * Lo corrí hacia x + 2.5 para que quede cerca de la esquina donde está el semáforo (x + 4).
+     */
     private void dibujarPasoPeatonal(float x, float z) {
-        for (int desplazamiento = -3; desplazamiento <= 3; desplazamiento++) { // Coloca siete franjas paralelas.
-            caja(x + desplazamiento, 0.045f, z - 8, 0.45f, 0.04f, 2, 0.85f, 0.87f, 0.83f); // Eleva la pintura un poco sobre el suelo.
+        for (float desplazamiento = -14; desplazamiento <= -6; desplazamiento += 1) { // Una franja por unidad, de acera a acera.
+            // Cada franja es larga en X (el sentido en que van los autos) y angosta en Z, como en una cebra real.
+            caja(x + 2.5f, 0.045f, z + desplazamiento, 2.4f, 0.04f, 0.5f, 0.85f, 0.87f, 0.83f); // Eleva la pintura un poco sobre el suelo.
         }
     }
 
@@ -170,7 +181,7 @@ public class clase4 extends clase3 {
     private void dibujarSemaforo(float x, float z) {
         caja(x, 1.7f, z, 0.18f, 2.8f, 0.18f, 0.18f, 0.20f, 0.22f); // Dibuja el poste sobre la acera.
         caja(x, 3.1f, z, 0.55f, 1.2f, 0.45f, 0.08f, 0.10f, 0.12f); // Dibuja la carcasa de las tres luces.
-        int fase = (int) (tiempo % 12); // Repite un ciclo de segundos comprendidos entre 0 y 11.
+        int fase = (int) (reloj % 12); // Ciclo de 0 a 11 segundos; con reloj sigue cambiando aunque ya hayas ganado.
         for (int indice = 0; indice < 3; indice++) { // Recorre rojo arriba, amarillo al centro y verde abajo.
             boolean encendida = false; // Parte de una bombilla apagada.
             if (indice == 0) { // Selecciona la bombilla roja.
