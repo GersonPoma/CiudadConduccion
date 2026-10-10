@@ -1,124 +1,161 @@
-# Ciudad y conducción con OpenGL: cuatro clases
+# Ciudad y conducción con OpenGL
 
-Proyecto de enseñanza basado en `AppCamara.java` y `AppLaberinto.java` de tus clases: Java 17, Maven, LWJGL 3.3.3, GLFW, OpenGL 3.3 Core, shaders GLSL, VAO y VBO. Toda la geometría se genera con código; no requiere imágenes ni modelos externos.
+Simulador de conducción en una ciudad 3D hecho con **Java 17, Maven, LWJGL 3.3.3 y OpenGL 3.3 Core** (shaders GLSL, VAO y VBO). El jugador maneja un auto por una ciudad de 11 × 11 celdas, con ciclo de día y noche, farolas, faros, semáforos y un minimapa, y tiene que completar un recorrido de tres entregas.
 
-## Ejecutar
+Toda la geometría se genera con código a partir de un único cubo: no usa imágenes, texturas ni modelos externos.
 
-Abre una terminal **en esta carpeta**, donde está `pom.xml`. Necesitas un JDK 17 o superior y Maven (`java -version`, `mvn -version`). La primera compilación descarga las dependencias.
+**Autor:** Gerson Enrique Villarroel Poma
+
+---
+
+## Ejecución
+
+### Requisitos
+- JDK 17 o superior (`java -version`).
+- Maven (`mvn -version`).
+- Una pantalla y una placa de video compatible con OpenGL 3.3.
+
+### Comando para ejecutar la versión final
+
+Abrir una terminal **en la carpeta del proyecto** (donde está `pom.xml`) y ejecutar:
 
 ```sh
-mvn compile exec:exec -DmainClass=com.graphics.clase1
-mvn compile exec:exec -DmainClass=com.graphics.clase2
-mvn compile exec:exec -DmainClass=com.graphics.clase3
-mvn compile exec:exec -DmainClass=com.graphics.clase4
+mvn compile exec:exec
 ```
 
-Ejecuta un comando por vez; ESC cierra la ventana. `mvn compile exec:exec` abre la versión final por defecto. En macOS, el perfil Maven agrega `-XstartOnFirstThread`. Si ejecutas desde un IDE en Mac, agrega ese argumento a las opciones de la JVM. Usa `exec:exec`, porque `exec:java` no inicia el proceso de esa forma.
+Abre `clase4`, que es la versión final con todas las funciones. La primera vez Maven descarga las dependencias, así que puede tardar un poco. **ESC** cierra la ventana.
 
-Incluye bibliotecas nativas para macOS Intel/Apple Silicon, Windows x64 y Linux x64/ARM64. Se necesita una sesión gráfica y un controlador compatible con OpenGL 3.3. No está diseñado para ejecutarse en un servidor sin pantalla.
+### Otros comandos
 
-## Cómo se acumulan los avances
-
-```text
-clase1: ciudad, mapa y renderizador
-  └── clase2 extends clase1: auto, conducción y colisiones
-        └── clase3 extends clase2: iluminación
-              └── clase4 extends clase3: detalles urbanos, entregas y minimapa
+```sh
+mvn test                                                  # pruebas automáticas
+mvn compile exec:exec -DmainClass=com.graphics.clase1     # solo la ciudad
+mvn compile exec:exec -DmainClass=com.graphics.clase2     # ciudad + auto
+mvn compile exec:exec -DmainClass=com.graphics.clase3     # ciudad + auto + iluminación
 ```
 
-Cada archivo tiene su propio `main` y puede ejecutarse como una etapa distinta dentro del proyecto. Las etapas posteriores necesitan los archivos anteriores: `extends` reutiliza el avance y `super.escena()` lo dibuja antes de añadir contenido. No son cuatro copias independientes. Así, en clase2 se explica el auto sin repetir la configuración de OpenGL. Se conservaron los nombres en minúscula solicitados; en proyectos Java es habitual usar `Clase1`.
+También se puede ejecutar desde IntelliJ: abrir `clase4.java` y ejecutar su método `main`.
 
-## Cómo leer el código comentado
+**Notas:**
+- Hay que usar `exec:exec` (no `exec:java`).
+- En macOS el `pom.xml` agrega `-XstartOnFirstThread` automáticamente. Si se ejecuta desde un IDE en Mac, hay que agregar ese argumento a la JVM.
+- Incluye las bibliotecas nativas para Windows x64, Linux x64/ARM64 y macOS Intel/Apple Silicon.
+- Con versiones de Java más nuevas que 17 pueden aparecer advertencias de LWJGL en la consola (acceso nativo, Unsafe). No afectan al funcionamiento.
 
-Los cuatro archivos están divididos en secciones numeradas. Cada instrucción tiene un comentario en español; cada método indica su propósito. Las llaves y líneas vacías solo separan bloques. Los shaders también están explicados línea por línea dentro de sus cadenas GLSL.
-
-- **clase1:** variables → inicio/ciclo/limpieza → teclado/cámara → ciudad → cajas/uniforms → shaders → vértices del cubo.
-- **clase2:** variables del auto → teclado → movimiento → colisiones → cámara → piezas del vehículo.
-- **clase3:** luces → controles → envío de datos → farolas → shader de iluminación.
-- **clase4:** partida → controles → entregas → destino → decoración → minimapa.
-
-Se usa una instrucción por línea, condiciones con llaves y cálculos intermedios con nombres descriptivos. El cubo contiene sus 36 vértices explícitos, como en los ejemplos originales. En `caja()` y `pieza()`, los argumentos mantienen este orden: posición X/Y/Z, tamaño X/Y/Z y color rojo/verde/azul; `cajaGirada()` agrega el ángulo al final.
-
-## Guion de enseñanza
-
-### Clase 1 — Crear primero la ciudad
-
-**Resultado:** una ciudad 3D con calles conectadas, marcas viales, edificios, aceras y parques. Las flechas izquierda/derecha orbitan la cámara.
-
-1. Leer `MAPA`: 0 es calle, 1 edificio y 2 parque. Las filas corresponden a Z y las columnas a X; Y es altura.
-2. Explicar `centro()`: convierte índices de matriz a coordenadas del mundo. Cada celda mide 10 unidades y el mapa ocupa 70 × 70.
-3. Revisar `crearCubo()`: posiciones y normales en VBO, atributos en VAO y 36 vértices.
-4. Seguir `caja()` y `cajaGirada()`: un cubo unitario se transforma en asfalto, edificio o línea.
-5. Leer `vertexShader()`: modelo, cámara y perspectiva. `uMapa` deja preparado el segundo tipo de proyección que se usa en clase4.
-6. Recorrer `run()`, `iniciar()`, `loop()`, `dibujarFrame()` y `limpiar()`: eventos, actualización, limpieza, dibujo y presentación.
-
-**Ejercicio:** cambiar una manzana de edificio a parque y variar las alturas. Mantener calles conectadas. Las normales se preparan aquí, pero la iluminación se introduce en clase3.
-
-### Clase 2 — Crear y mover el auto
-
-**Resultado:** auto rojo con cabina, ruedas y faros, cámara de seguimiento y colisiones con manzanas y borde.
-
-1. Leer `dibujarAuto()` y `pieza()`: las piezas usan coordenadas locales que giran y se trasladan juntas.
-2. Estudiar `actualizar(deltaTime)`: aceleración, resistencia, freno y límites de velocidad.
-3. Relacionar seno/coseno con la dirección del auto. Su frente local es -Z; el giro está en radianes.
-4. Explicar el giro proporcional a la velocidad y el cambio de dirección al retroceder.
-5. Revisar `puedeCircular()`: círculo contra rectángulo, punto más cercano y distancia al cuadrado.
-6. Alternar cámaras con C para observar la conducción en el mapa.
-
-**Ejercicio:** modificar aceleración y resistencia y comparar el manejo. El círculo de colisión es conservador para contener todas las piezas. El choque detiene al auto; no hay rebotes. El paso temporal se limita para evitar atravesar una manzana tras una pausa larga.
-
-### Clase 3 — Focos e iluminación
-
-**Resultado:** ambiente nocturno, nueve farolas que iluminan superficies, faros del vehículo y cambio día/noche.
-
-1. Comparar el shader de color plano de clase1 con `fragmentShader()` de clase3.
-2. Estudiar normales y Lambert: `max(dot(normal, direccionLuz), 0)`.
-3. Revisar ambiente y luz direccional del sol.
-4. Relacionar las coordenadas de `LUCES` con los postes dibujados en `escena()`.
-5. Analizar cómo disminuye la luz con la distancia.
-6. Explicar el cono de los faros con producto escalar y `smoothstep`.
-7. Comparar emisión de la bombilla con la luz calculada sobre el suelo. Son fenómenos distintos.
-
-**Ejercicio:** variar el color y la atenuación de una farola. La iluminación es local, sin sombras ni oclusión: una luz puede atravesar un edificio. Implementar shadow maps queda como ampliación. El cielo conserva el mismo fondo para concentrar la comparación día/noche en las superficies.
-
-### Clase 4 — Ciudad final y minimapa
-
-**Resultado:** parques con árboles y bancos, ventanas iluminadas, pasos peatonales, semáforos animados, minimapa y juego de tres entregas.
-
-1. Estudiar `decorarCiudad()` y sus métodos `dibujarParque()`, `dibujarVentanas()`, `dibujarPasoPeatonal()` y `dibujarSemaforo()`: composición de objetos reutilizando cajas y la matriz.
-2. Leer `DESTINOS` y `actualizar()`: acercarse a menos de 3 unidades y frenar a menos de 1 unidad/segundo completa una entrega.
-3. Seguir `dibujarFrame()`: primero la cámara principal, después una vista ortográfica en otro viewport.
-4. Explicar `glScissor`: permite borrar solo el recuadro del minimapa y su profundidad.
-5. Mostrar por qué se restauran viewport, scissor y `uMapa` al terminar.
-6. Seguir el indicador cian del auto y su punta blanca; la marca dorada indica el destino activo.
-
-**Ejercicio:** agregar una cuarta entrega sobre una calle o modificar el tamaño del minimapa. El minimapa mantiene el norte (-Z) arriba. El destino se muestra también como baliza dorada en el mundo. Al completar tres entregas aparece GANASTE en el título; R reinicia.
+---
 
 ## Controles
 
-| Tecla | Acción | Desde |
-|---|---|---|
-| Izquierda / derecha | Orbitar la ciudad | Clase 1 únicamente |
-| W / S o arriba / abajo | Acelerar / frenar y retroceder | Clase 2 |
-| A / D o izquierda / derecha | Girar mientras el auto se mueve | Clase 2 |
-| Espacio | Freno | Clase 2 |
-| C | Cámara de seguimiento / aérea oblicua | Clase 2 |
-| R | Reiniciar auto y, en clase4, las entregas | Clase 2 |
-| N | Día / noche | Clase 3 |
-| F | Encender / apagar faros | Clase 3 |
-| M | Mostrar / ocultar minimapa | Clase 4 |
-| ESC | Salir | Todas |
+| Tecla | Acción |
+|---|---|
+| W / ↑ | Acelerar |
+| S / ↓ | Frenar y retroceder |
+| A / ← y D / → | Girar (el giro depende de la velocidad) |
+| Espacio | Freno fuerte |
+| C | Cambiar entre cámara de seguimiento y vista aérea |
+| N | Día / noche |
+| F | Encender / apagar los faros |
+| M | Mostrar / ocultar el minimapa |
+| R | Reiniciar el auto y el recorrido de entregas |
+| ESC | Salir |
 
-El título de la ventana muestra velocidad en km/h (se supone una unidad = un metro), luces, entregas y tiempo. Puede truncarse si la ventana es pequeña. La velocidad máxima real es algo menor que el límite por la resistencia aplicada. Los semáforos son decorativos: cambian de color pero no bloquean al vehículo. No hay tráfico, peatones, audio, sombras, modelos importados ni ruedas animadas; este es el alcance del ejemplo didáctico finalizado.
+En `clase1` (solo la ciudad), las flechas izquierda/derecha giran la cámara alrededor de la ciudad.
 
-## Verificación
+**Indicador:** el título de la ventana muestra en todo momento la velocidad en km/h, si es de día o de noche, el estado de los faros, el progreso de las entregas y el tiempo. Si la ventana es muy angosta el título puede cortarse; en ese caso conviene maximizarla.
 
-```sh
-mvn test
+---
+
+## Diseño de la ciudad
+
+La ciudad sale de una matriz de 11 × 11 (`MAPA` en `clase1`), donde `0` es calle, `1` es edificio y `2` es parque. Cada celda mide 10 unidades, así que el mundo ocupa 110 × 110.
+
+```
+fila 0   0 0 0 0 0 0 0 0 0 0 0   ← calle del borde norte
+fila 1   0 1 0 1 0 2 0 1 0 1 0
+fila 2   0 0 0 0 0 0 0 0 0 0 0   ← avenida
+fila 3   0 2 0 1 0 1 0 1 0 2 0
+fila 4   0 0 0 0 0 0 0 0 0 0 0
+fila 5   0 1 0 2 0 1 0 2 0 1 0   ← centro
+fila 6   0 0 0 0 0 0 0 0 0 0 0
+fila 7   0 1 0 1 0 2 0 1 0 1 0
+fila 8   0 0 0 0 0 0 0 0 0 0 0
+fila 9   0 2 0 1 0 1 0 1 0 2 0
+fila 10  0 0 0 0 0 0 0 0 0 0 0   ← calle del borde sur
 ```
 
-Las pruebas de lógica comprueban rutas transitables, manzanas, márgenes de colisión y reinicio sin abrir ventanas. Para un arranque gráfico breve puede pasarse `-Ddemo.frames=6` a la **JVM del juego**; al llegar a ese número de cuadros la ventana se cierra. Esta prueba necesita pantalla y comprueba también compilación/enlace de shaders y errores OpenGL.
+- **Cuadrícula:** las filas y columnas pares son siempre calle y las manzanas van en las impares. Cada manzana queda rodeada de calle, así que toda la red vial está conectada y se puede llegar a cualquier punto.
+- **25 manzanas:** 17 con edificio y 8 parques.
+- **Edificios:** cada uno tiene una altura (entre 5 y 13) y un color distintos según su posición, con techo y ventanas en las cuatro fachadas.
+- **Parques:** césped, cuatro árboles y un banco.
+- **Calles:** asfalto, líneas amarillas entre los cruces, un paso de cebra y un semáforo junto a cada manzana.
+- **Iluminación:** 25 farolas, una en la esquina de cada manzana.
 
-Práctica manual: ejecutar cada etapa; conducir y chocar con una acera; retroceder; cambiar cámara; alternar N/F; redimensionar la ventana; alternar M; completar las tres entregas y reiniciar con R.
+---
 
-Verificado en este equipo: las cuatro etapas abrieron un contexto gráfico, dibujaron seis cuadros y cerraron sin errores OpenGL. Con Java 25 y LWJGL 3.3.3 aparecen advertencias de acceso nativo, Unsafe y versión JNI; para impartir las clases se recomienda usar JDK 17, la versión objetivo de los ejemplos originales. El arranque breve no sustituye completar manualmente el recorrido.
+## Funciones implementadas
+
+### Conducción y colisiones
+- Aceleración, freno, reversa y giro proporcional a la velocidad. Todo el movimiento usa el tiempo entre cuadros (`deltaTime`), así que la velocidad no depende de los FPS.
+- Colisiones contra las manzanas y los bordes del mapa: el auto se modela como un círculo y se detiene al chocar.
+- Cámara de seguimiento detrás del auto y vista aérea de toda la ciudad (tecla C).
+
+### Iluminación
+- **Día y noche** (tecla N): luz ambiental y luz direccional (sol) distintas en cada modo.
+- **Luz difusa con normales** (modelo de Lambert): cada cara recibe más o menos luz según hacia dónde mira, así que techos y paredes se ven distintos.
+- **25 farolas** que iluminan el suelo y los edificios cercanos de noche, con una intensidad que baja con la distancia.
+- **Faros del auto** (tecla F): dos focos que siguen la posición y la orientación del auto, con forma de cono y un alcance máximo de unas 28 unidades.
+- **Emisión separada de la iluminación:** las bombillas, los faros encendidos y las ventanas de noche "brillan" con su color, pero eso no ilumina nada; la luz que reciben las superficies se calcula aparte en el shader.
+
+### Funciones de la ciudad
+- **Decoración:** árboles y bancos en los parques, ventanas en los edificios (encendidas de noche) y pasos de cebra junto a las manzanas.
+- **Semáforos animados:** secuencia rojo (5 s) → verde (5 s) → amarillo (2 s) que se repite siempre. Son solo visuales.
+- **Minimapa** (tecla M): vista superior en la esquina superior derecha con toda la ciudad, el auto (posición y orientación) y el destino activo, con el norte arriba. Mantiene su forma y su lugar al redimensionar la ventana y no altera la vista principal.
+- **Entregas:** tres destinos marcados con una plataforma dorada y una baliza. Para completar cada uno hay que llegar y frenar encima. Al terminar el título muestra "GANASTE" con el tiempo.
+- **Reinicio** (tecla R): devuelve el auto al punto de partida, detenido y mirando al norte, y reinicia las entregas y el cronómetro para volver a jugar.
+
+---
+
+## Organización del código
+
+El proyecto se organiza por responsabilidad en cuatro clases que se heredan una a otra. Cada una agrega un área y reutiliza la anterior con `super`:
+
+```text
+clase1                → base: ventana, ciclo principal, shaders, cubo (VAO/VBO), mapa y cámara
+  └── clase2          → conducción: física del auto, teclado, colisiones, cámaras, modelo del auto
+        └── clase3    → iluminación: día/noche, farolas, faros, shader con luz
+              └── clase4  → funciones: entregas, decoración, semáforos, minimapa y reinicio
+```
+
+Cada clase tiene su propio `main`, así que se puede ejecutar cada etapa por separado.
+
+Archivos:
+- `src/main/java/com/graphics/clase1.java` … `clase4.java`: código fuente.
+- `src/test/java/com/graphics/ConduccionTest.java`: pruebas de calles transitables, colisiones, bordes y reinicio (se ejecutan sin abrir la ventana).
+- `pom.xml`: dependencias y configuración de Maven.
+
+---
+
+## Limitaciones
+
+- **Sin sombras:** la iluminación es local, así que la luz de una farola o de los faros puede "atravesar" un edificio.
+- **Semáforos solo visuales:** no detienen al auto, y todos cambian de color al mismo tiempo.
+- **Sin tráfico ni peatones:** el único vehículo es el del jugador. Tampoco hay sonido.
+- **Choques simples:** al chocar el auto se detiene, sin rebote ni daño. La colisión usa un círculo, así que en las esquinas de las manzanas el choque se siente un poco antes de tocar la acera.
+- **Indicador en el título:** no hay texto dibujado dentro de la ventana; la información está en el título.
+- **Gráficos con cajas:** todo se arma con cubos de colores, sin texturas ni modelos.
+- **Vista aérea fija:** en la versión con auto la vista aérea no se puede girar, porque las flechas se usan para manejar.
+- **FPS muy bajos:** si el juego baja de 20 FPS, el movimiento se ralentiza a propósito (el paso de tiempo se limita a 0.05 s para que el auto no atraviese manzanas tras una pausa).
+
+---
+
+## Recursos externos
+
+- **Proyecto base del curso:** este trabajo parte del proyecto de referencia entregado en la materia (las clases `clase1` a `clase4` originales, basadas en `AppCamara.java` y `AppLaberinto.java`). Sobre esa base se hicieron las modificaciones pedidas en el enunciado:
+  - ampliar la ciudad de 7 × 7 a 11 × 11 y adaptar el suelo, los límites, las cámaras, el minimapa, los destinos y las pruebas;
+  - llevar las farolas de 9 a 25, limitar el alcance de los faros y hacer que los faros brillen al encenderlos;
+  - corregir que los semáforos se detuvieran al terminar la partida y rehacer los pasos peatonales.
+- **[LWJGL 3.3.3](https://www.lwjgl.org/)** (GLFW y OpenGL): biblioteca para crear la ventana, leer el teclado y usar OpenGL desde Java.
+- **[JUnit 3.8.1](https://junit.org/)**: framework de las pruebas automáticas.
+- **Asistente de IA:** parte del análisis del código, de las modificaciones y de la documentación se hizo con ayuda de un asistente de inteligencia artificial (Claude, de Anthropic). Los cambios fueron revisados y probados por el autor.
+
+No se usaron imágenes, texturas, modelos 3D ni otros fragmentos de código externos.
