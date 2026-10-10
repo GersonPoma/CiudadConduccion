@@ -15,10 +15,12 @@ public class clase4 extends clase3 {
     private boolean mostrarMapa = true; // Muestra el minimapa desde el inicio.
     private int entregas = 0; // Cuenta las entregas completadas; también identifica el siguiente destino.
     private float tiempo = 0; // Acumula los segundos de la partida hasta completar el recorrido.
+    // Moví las entregas a las esquinas del mapa nuevo para que el recorrido pase por la parte agregada.
+    // Tienen que estar en calle: X y Z con -50, -30, -10, 10, 30 o 50 (los otros valores caen en manzanas).
     private static final float[][] DESTINOS = { // Cada fila contiene X y Z de una parada sobre la calle.
-        {30, -30}, // Primera entrega: esquina noreste.
-        {-30, -30}, // Segunda entrega: esquina noroeste.
-        {-30, 30} // Tercera entrega: regreso al punto inicial.
+        {50, -50}, // Primera entrega: esquina noreste.
+        {-50, -50}, // Segunda entrega: esquina noroeste.
+        {-50, 50} // Tercera entrega: vuelta al punto de salida.
     };
 
     // ==================== 2. CONTROLES Y REINICIO ====================
@@ -65,10 +67,10 @@ public class clase4 extends clase3 {
     protected String estadoExtra() {
         String mensaje = super.estadoExtra(); // Recupera los indicadores de iluminación.
         mensaje += " | M: mapa | "; // Muestra la tecla que alterna el minimapa.
-        if (entregas == DESTINOS.length) { // Selecciona el texto de victoria al completar las tres paradas.
+        if (entregas == DESTINOS.length) { // Selecciona el texto de victoria al completar todas las paradas.
             mensaje += "GANASTE en " + (int) tiempo + " s! R: jugar otra vez"; // Muestra tiempo final y opción de reinicio.
         } else { // Durante el recorrido muestra progreso e instrucciones.
-            mensaje += "Entregas " + entregas + "/3"; // Indica cuántas paradas se completaron.
+            mensaje += "Entregas " + entregas + "/" + DESTINOS.length; // Antes decía "/3" fijo; así si agrego entregas se actualiza solo.
             mensaje += " | Frena en la marca dorada | " + (int) tiempo + " s"; // Explica la condición de entrega y el tiempo.
         }
         return mensaje; // Entrega el texto a actualizarTitulo() de clase2.
@@ -238,12 +240,14 @@ public class clase4 extends clase3 {
 
     /** Dibuja una marca cian y una punta blanca por encima de los edificios del minimapa. */
     private void dibujarIndicadorAuto() {
-        cajaGirada(autoX, 25, autoZ, 2.2f, 0.1f, 3.2f, 0.1f, 1, 1, angulo); // Marca la posición con un rectángulo cian orientado.
+        // Con el mapa más grande el autito en el minimapa se veía muy chico, así que lo agrandé como 1.5 veces.
+        // La altura 25/26 la dejé igual porque igual queda arriba del edificio más alto.
+        cajaGirada(autoX, 25, autoZ, 3.3f, 0.1f, 4.8f, 0.1f, 1, 1, angulo); // Marca la posición con un rectángulo cian orientado.
         float frenteX = -(float) Math.sin(angulo); // Calcula la dirección frontal en el eje X.
         float frenteZ = -(float) Math.cos(angulo); // Calcula la dirección frontal en el eje Z.
-        float puntaX = autoX + frenteX * 2; // Desplaza la punta dos unidades hacia delante en X.
-        float puntaZ = autoZ + frenteZ * 2; // Desplaza la punta dos unidades hacia delante en Z.
-        caja(puntaX, 26, puntaZ, 0.9f, 0.1f, 0.9f, 1, 1, 1); // Dibuja la punta blanca encima del indicador cian.
+        float puntaX = autoX + frenteX * 3; // Desplaza la punta tres unidades hacia delante en X.
+        float puntaZ = autoZ + frenteZ * 3; // Desplaza la punta tres unidades hacia delante en Z.
+        caja(puntaX, 26, puntaZ, 1.4f, 0.1f, 1.4f, 1, 1, 1); // Dibuja la punta blanca encima del indicador cian.
     }
 
     /** Punto de entrada del proyecto final. */

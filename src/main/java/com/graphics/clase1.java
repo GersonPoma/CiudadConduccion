@@ -26,18 +26,25 @@ public class clase1 {
     protected int alto = 760; // Alto inicial de la ventana; después contiene píxeles del framebuffer.
     protected float orbita = 0.6f; // Ángulo inicial de la cámara alrededor de la ciudad, en radianes.
     protected boolean vistaMapa = false; // Clase4 lo activa cuando dibuja la vista superior.
-    protected static final float LIMITE = 35; // Distancia del origen a cada borde: el mapa mide 70 unidades.
-    protected static final float CELDA = 10; // Ancho y profundidad de cada celda del mapa.
+    protected static final float LIMITE = 55; // Distancia del centro a cada borde. 11 celdas de 10 = 110, la mitad es 55.
+    protected static final float CELDA = 10; // Ancho y profundidad de cada celda (no se cambia, lo pide el enunciado).
     private final Map<String, Integer> uniforms = new HashMap<>(); // Evita buscar repetidamente el mismo uniform.
 
+    // Mapa de 11x11. Las filas pares son todo calle y en las impares va calle, manzana, calle, manzana...
+    // Así cada manzana tiene calle alrededor y se puede llegar a cualquier lado.
+    // Quedan 17 edificios y 8 parques (piden mínimo 12 y 4).
     protected static final int[][] MAPA = { // Matriz: 0 = calle, 1 = edificio, 2 = parque.
-        {0, 0, 0, 0, 0, 0, 0}, // Fila norte: calle continua.
-        {0, 1, 0, 1, 0, 2, 0}, // Primera fila de manzanas, separadas por calles.
-        {0, 0, 0, 0, 0, 0, 0}, // Segunda avenida horizontal.
-        {0, 2, 0, 1, 0, 1, 0}, // Fila central de manzanas.
-        {0, 0, 0, 0, 0, 0, 0}, // Tercera avenida horizontal.
-        {0, 1, 0, 2, 0, 1, 0}, // Última fila de manzanas.
-        {0, 0, 0, 0, 0, 0, 0} // Calle del borde sur.
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // fila 0, Z = -50: calle del borde norte
+        {0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0}, // fila 1, Z = -40: 4 edificios, 1 parque
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // fila 2, Z = -30: avenida
+        {0, 2, 0, 1, 0, 1, 0, 1, 0, 2, 0}, // fila 3, Z = -20: 3 edificios, 2 parques
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // fila 4, Z = -10: avenida
+        {0, 1, 0, 2, 0, 1, 0, 2, 0, 1, 0}, // fila 5, Z = 0: la del medio, 3 edificios, 2 parques
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // fila 6, Z = 10: avenida
+        {0, 1, 0, 1, 0, 2, 0, 1, 0, 1, 0}, // fila 7, Z = 20: 4 edificios, 1 parque
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0}, // fila 8, Z = 30: avenida
+        {0, 2, 0, 1, 0, 1, 0, 1, 0, 2, 0}, // fila 9, Z = 40: 3 edificios, 2 parques
+        {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0} // fila 10, Z = 50: calle del borde sur
     };
 
     // ==================== 2. INICIO, CICLO Y LIMPIEZA ====================
@@ -153,11 +160,17 @@ public class clase1 {
         }
     }
 
-    /** Coloca la cámara elevada y orientada hacia el centro de la ciudad. */
+    /**
+     * Coloca la cámara elevada y orientada hacia el centro de la ciudad.
+     * La ciudad pasó de 70 a 110, o sea ~1.57 veces más grande, así que alejé la cámara lo mismo:
+     * radio 65 x 1.57 = 102 (puse 100) y altura 55 x 1.57 = 86 (puse 85).
+     * Subí los dos juntos para que mire con el mismo ángulo que antes; si subo solo uno se ve raro.
+     * La vista aérea de clase2 (tecla C) usa esta misma cámara.
+     */
     protected void configurarCamara() {
-        float camaraX = (float) Math.sin(orbita) * 65; // Calcula la posición X de una órbita de radio 65.
-        float camaraZ = (float) Math.cos(orbita) * 65; // Calcula la posición Z de esa misma órbita.
-        vector("uOjo", camaraX, 55, camaraZ); // Envía la posición de la cámara a 55 unidades de altura.
+        float camaraX = (float) Math.sin(orbita) * 100; // Calcula la posición X de una órbita de radio 100.
+        float camaraZ = (float) Math.cos(orbita) * 100; // Calcula la posición Z de esa misma órbita.
+        vector("uOjo", camaraX, 85, camaraZ); // Envía la posición de la cámara a 85 unidades de altura.
         vector("uObjetivo", 0, 0, 0); // Apunta la cámara hacia el origen del mundo.
         decimal("uAspecto", (float) ancho / alto); // Envía la proporción de la imagen para evitar deformaciones.
     }
@@ -192,7 +205,8 @@ public class clase1 {
 
     /** Recorre el mapa y transforma cada celda en geometría. */
     protected void escena() {
-        caja(0, -0.25f, 0, 70, 0.5f, 70, 0.16f, 0.19f, 0.23f); // Dibuja la base de asfalto con su cara superior en Y=0.
+        // Uso LIMITE * 2 en vez de poner 110, así si cambio el tamaño del mapa el suelo se ajusta solo.
+        caja(0, -0.25f, 0, LIMITE * 2, 0.5f, LIMITE * 2, 0.16f, 0.19f, 0.23f); // Dibuja la base de asfalto con su cara superior en Y=0.
         for (int fila = 0; fila < MAPA.length; fila++) { // Recorre el mapa de norte a sur.
             for (int columna = 0; columna < MAPA[fila].length; columna++) { // Recorre cada fila de izquierda a derecha.
                 float x = centro(columna); // Convierte la columna a posición X.
@@ -300,8 +314,8 @@ public class clase1 {
                 vNormal = normalize(giro * (aNormal / uEscala)); // Corrige la normal con la inversa transpuesta de escala y giro.
 
                 if (uMapa == 1) { // Esta rama se usa al dibujar el minimapa en clase4.
-                    float pantallaX = vMundo.x / 37.0; // Ajusta el ancho del mundo al intervalo visible -1 a 1.
-                    float pantallaY = -vMundo.z / 37.0; // Coloca el norte (-Z) en la parte superior del mapa.
+                    float pantallaX = vMundo.x / 57.0; // 55 del mapa + 2 de margen, para que la ciudad no quede pegada al borde.
+                    float pantallaY = -vMundo.z / 57.0; // Coloca el norte (-Z) en la parte superior del mapa.
                     float profundidad = -vMundo.y / 100.0; // Hace que los objetos más altos se vean por encima.
                     gl_Position = vec4(pantallaX, pantallaY, profundidad, 1.0); // Proyecta sin reducir objetos lejanos.
                 } else { // La escena principal utiliza una cámara con perspectiva.
@@ -314,7 +328,7 @@ public class clase1 {
                     float vistaZ = -dot(diferencia, frente); // Usa Z negativa delante de la cámara, como espera OpenGL.
                     float factor = 1.0 / tan(radians(55.0) * 0.5); // Convierte el campo visual de 55 grados en escala de perspectiva.
                     float cerca = 0.1; // Define la distancia mínima visible.
-                    float lejos = 250.0; // Define la distancia máxima visible.
+                    float lejos = 250.0; // Distancia máxima visible. Desde la cámara la esquina más lejos queda a unas 200, con 250 sobra.
                     float clipX = vistaX * factor / uAspecto; // Corrige la coordenada horizontal según el ancho de la pantalla.
                     float clipY = vistaY * factor; // Aplica el campo visual a la coordenada vertical.
                     float clipZ = (lejos + cerca) / (cerca - lejos) * vistaZ; // Calcula el término de profundidad dependiente de Z.

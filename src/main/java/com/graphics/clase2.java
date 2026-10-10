@@ -10,8 +10,12 @@ import static org.lwjgl.glfw.GLFW.*; // Permite consultar teclas y cambiar el t�
 public class clase2 extends clase1 {
 
     // ==================== 1. VARIABLES DEL AUTO ====================
-    protected float autoX = -30; // Posición horizontal inicial: centro de una calle.
-    protected float autoZ = 30; // Posición inicial sobre el eje que recorre el fondo de la ciudad.
+    // El auto arranca en la esquina de abajo a la izquierda del mapa nuevo (que es calle).
+    // Lo puse en constantes porque antes el -30 y el 30 estaban escritos aquí y otra vez en reiniciar().
+    protected static final float INICIO_X = -50; // Calle del borde oeste.
+    protected static final float INICIO_Z = 50; // Calle del borde sur.
+    protected float autoX = INICIO_X; // Posición horizontal inicial: centro de una calle.
+    protected float autoZ = INICIO_Z; // Posición inicial sobre la calle del borde sur.
     protected float angulo = 0; // Orientación en radianes; cero apunta hacia -Z.
     protected float velocidad = 0; // Unidades por segundo; un valor negativo significa reversa.
     protected boolean camaraAerea = false; // false: seguir el auto; true: observar toda la ciudad.
@@ -35,8 +39,8 @@ public class clase2 extends clase1 {
 
     /** Coloca nuevamente el auto en su punto de partida. */
     protected void reiniciar() {
-        autoX = -30; // Recupera la coordenada X de inicio.
-        autoZ = 30; // Recupera la coordenada Z de inicio.
+        autoX = INICIO_X; // Recupera la coordenada X de inicio.
+        autoZ = INICIO_Z; // Recupera la coordenada Z de inicio.
         angulo = 0; // Orienta el frente hacia -Z.
         velocidad = 0; // Detiene cualquier movimiento previo.
     }
@@ -112,6 +116,8 @@ public class clase2 extends clase1 {
 
     /** Comprueba si el círculo del auto cabe en una posición sin tocar manzanas ni bordes. */
     protected boolean puedeCircular(float x, float z) {
+        // Al agrandar el mapa este método no lo toqué: el borde lo saca de LIMITE
+        // y las manzanas las lee de MAPA, entonces funciona igual con el 11x11.
         float limitePermitido = LIMITE - RADIO_AUTO; // Reserva espacio para que el auto completo quede dentro.
 
         if (Math.abs(x) > limitePermitido || Math.abs(z) > limitePermitido) { // Detecta salida por cualquier borde.
@@ -126,6 +132,7 @@ public class clase2 extends clase1 {
 
                 float centroX = centro(columna); // Convierte la columna al centro X de la manzana.
                 float centroZ = centro(fila); // Convierte la fila al centro Z de la manzana.
+                // El 5 es media celda. La celda sigue midiendo 10, así que esto no cambia.
                 float cercaX = Math.max(centroX - 5, Math.min(x, centroX + 5)); // Busca el X más cercano dentro de la acera.
                 float cercaZ = Math.max(centroZ - 5, Math.min(z, centroZ + 5)); // Busca el Z más cercano dentro de la acera.
                 float distanciaX = x - cercaX; // Calcula la separación horizontal del auto al rectángulo.
